@@ -177,7 +177,9 @@ boolean WiFiManager::autoConnect(char const *apName, char const *apPassword) {
     DEBUG_WM(F("IP Address:"));
     DEBUG_WM(WiFi.localIP());
     //connected
-    return true;
+    if(_afterConnectCallback()){
+      return true;
+    }
   }
 
   return startConfigPortal(apName, apPassword);
@@ -197,14 +199,15 @@ boolean WiFiManager::startConfigPortal() {
 }
 
 boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPassword) {
-  
+  bool customParamsOk = true;
+
   if(!WiFi.isConnected()){
     WiFi.persistent(false);
     // disconnect sta, start ap
     WiFi.disconnect(); //  this alone is not enough to stop the autoconnecter
     WiFi.mode(WIFI_AP);
     WiFi.persistent(true);
-  } 
+  }
   else {
     //setup AP
     WiFi.mode(WIFI_AP_STA);
@@ -248,7 +251,7 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
         //notify that configuration has changed and any optional parameters should be saved
         if ( _savecallback != NULL) {
           //todo: check if any custom parameters actually exist, and check if they really changed maybe
-          _savecallback();
+          customParamsOk = _savecallback();
         }
         break;
       }
@@ -258,7 +261,7 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
         //notify that configuration has changed and any optional parameters should be saved
         if ( _savecallback != NULL) {
           //todo: check if any custom parameters actually exist, and check if they really changed maybe
-          _savecallback();
+          customParamsOk = _savecallback();
         }
         break;
       }
@@ -269,7 +272,7 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
   server.reset();
   dnsServer.reset();
 
-  return  WiFi.status() == WL_CONNECTED;
+  return  WiFi.status() == WL_CONNECTED && customParamsOk;
 }
 
 
@@ -758,9 +761,16 @@ void WiFiManager::setAPCallback( void (*func)(WiFiManager* myWiFiManager) ) {
 }
 
 //start up save config callback
-void WiFiManager::setSaveConfigCallback( void (*func)(void) ) {
+void WiFiManager::setSaveConfigCallback( bool (*func)(void)) {
   _savecallback = func;
 }
+
+//start up save config callback
+void WiFiManager::setAfterConnectCallback( bool (*func)(void)) {
+  _afterConnectCallback = func;
+}
+
+
 
 //sets a custom element to add to head, like a new style tag
 void WiFiManager::setCustomHeadElement(const char* element) {
