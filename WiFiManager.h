@@ -106,9 +106,11 @@ class WiFiManager
     //called when AP mode and config portal is started
     void          setAPCallback( void (*func)(WiFiManager*) );
     //called when settings have been changed and connection was successful
-    void          setSaveConfigCallback( bool (*func)() );
+    void          setSaveConfigCallback( bool (*func)(void) );
     //called when the wifi connection was created successfully
-    void          setAfterConnectCallback( bool (*func)() );
+    void          setAfterConnectCallback( bool (*func)(void) );
+    //called when the configportal timed out (waiting for user input).
+    void          setConfigPortalTimedoutCallback( void (*func)(void) );
     //adds a custom parameter, returns false on failure
     bool          addParameter(WiFiManagerParameter *p);
     //if this is set, it will exit after config, even if connection is unsuccessful.
@@ -186,6 +188,7 @@ class WiFiManager
     void (*_apcallback)(WiFiManager*) = NULL;
     bool (*_savecallback)() = NULL;
     bool (*_afterConnectCallback)() = NULL;
+    void (*_portalTimedOutCallback)() = NULL;
 
     int                    _max_params;
     WiFiManagerParameter** _params;

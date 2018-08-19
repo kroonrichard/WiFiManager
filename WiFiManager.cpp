@@ -200,6 +200,7 @@ boolean WiFiManager::startConfigPortal() {
 
 boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPassword) {
   bool customParamsOk = true;
+  bool timedOut = true;
 
   if(!WiFi.isConnected()){
     WiFi.persistent(false);
@@ -229,7 +230,10 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
   while(1){
 
     // check if timeout
-    if(configPortalHasTimeout()) break;
+    if(configPortalHasTimeout()) {
+      timedOut = true;
+      break;
+    }
 
     //DNS
     dnsServer->processNextRequest();
@@ -272,7 +276,16 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
   server.reset();
   dnsServer.reset();
 
-  return  WiFi.status() == WL_CONNECTED && customParamsOk;
+  if(WiFi.status() == WL_CONNECTED && customParamsOk) {
+    return true;
+  }
+
+  if(timedOut){
+    _portalTimedOutCallback();
+  }
+  
+  return false;
+
 }
 
 
@@ -758,6 +771,10 @@ boolean WiFiManager::captivePortal() {
 //start up config portal callback
 void WiFiManager::setAPCallback( void (*func)(WiFiManager* myWiFiManager) ) {
   _apcallback = func;
+}
+
+void WiFiManager::setConfigPortalTimedoutCallback(void (*func)(void)) {
+  _portalTimedOutCallback = func;
 }
 
 //start up save config callback
